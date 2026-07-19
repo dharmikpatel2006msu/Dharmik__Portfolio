@@ -7,6 +7,7 @@ import CustomCursor from "./components/CustomCursor";
 import BackgroundEffect from "./components/BackgroundEffect";
 import NoiseOverlay from "./components/NoiseOverlay";
 import ScrollProgressBar from "./components/ScrollProgressBar";
+import LoadingScreen from "./components/LoadingScreen";
 
 // Sections
 import Navbar from "./sections/Navbar";
@@ -27,7 +28,6 @@ import Footer from "./sections/Footer";
 
 function App() {
   const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
 
   // Initialize Lenis Smooth Scroll
   useEffect(() => {
@@ -49,109 +49,71 @@ function App() {
 
     requestAnimationFrame(raf);
 
+    // Disable scroll while loading is active
+    if (loading) {
+      lenis.stop();
+    } else {
+      lenis.start();
+    }
+
     return () => {
       lenis.destroy();
     };
-  }, []);
-
-  // Simulated Page Loader Progress
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + Math.floor(Math.random() * 15 + 5);
-        if (next >= 100) {
-          clearInterval(interval);
-          setTimeout(() => setLoading(false), 600);
-          return 100;
-        }
-        return next;
-      });
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
+  }, [loading]);
 
   return (
     <>
-      {/* Premium Loader */}
+      {/* Premium Boot Loader Screen */}
       <AnimatePresence>
         {loading && (
-          <motion.div
-            className="fixed inset-0 z-[999999] bg-[#050816] flex flex-col justify-center items-center font-space"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
-          >
-            {/* Dynamic visual loader elements */}
-            <div className="relative flex flex-col items-center gap-4">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0, filter: "blur(10px)" }}
-                animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
-                transition={{ duration: 0.6 }}
-                className="text-4xl font-extrabold tracking-widest text-gradient-neon"
-              >
-                DHARMIK
-              </motion.div>
-              
-              {/* Spinning progress loader ring */}
-              <div className="relative w-16 h-16 flex items-center justify-center">
-                <div className="absolute inset-0 rounded-full border-2 border-white/5" />
-                <motion.div
-                  className="absolute inset-0 rounded-full border-2 border-t-secondary border-r-transparent border-b-transparent border-l-transparent"
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                />
-                <span className="text-xs font-mono font-semibold text-white/80">
-                  {progress}%
-                </span>
-              </div>
-            </div>
-          </motion.div>
+          <LoadingScreen onComplete={() => setLoading(false)} />
         )}
       </AnimatePresence>
 
-      {/* Main Layout and Site Elements */}
-      {!loading && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="relative min-h-screen"
-        >
-          {/* Global overlays & animations */}
-          <CustomCursor />
-          <BackgroundEffect />
-          <NoiseOverlay />
-          <ScrollProgressBar />
+      {/* Main Layout and Site Elements (Rendered underneath, fades & unblurs once loaded) */}
+      <motion.div
+        initial={{ opacity: 0, filter: "blur(8px)" }}
+        animate={{ 
+          opacity: loading ? 0.2 : 1, 
+          filter: loading ? "blur(6px)" : "blur(0px)" 
+        }}
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        className={`relative min-h-screen ${loading ? "pointer-events-none select-none" : ""}`}
+      >
+        {/* Global overlays & animations */}
+        <CustomCursor />
+        <BackgroundEffect />
+        <NoiseOverlay />
+        <ScrollProgressBar />
 
-          {/* Site Sections */}
-          <Navbar />
+        {/* Site Sections */}
+        <Navbar />
+        
+        <main className="relative z-10 w-full">
+          <Hero />
+          <About />
+          <Skills />
+          <Projects />
           
-          <main className="relative z-10 w-full">
-            <Hero />
-            <About />
-            <Skills />
-            <Projects />
-            
-            {/* Intersecting timelining items */}
-            <Experience />
-            <Education />
-            
-            {/* Developer dashboards */}
-            <CodingProfiles />
-            <GitHubSection />
-            
-            {/* Social validations */}
-            <Certificates />
-            <Achievements />
-            <Testimonials />
-            <Blogs />
-            
-            <Contact />
-          </main>
+          {/* Intersecting timelining items */}
+          <Experience />
+          <Education />
+          
+          {/* Developer dashboards */}
+          <CodingProfiles />
+          <GitHubSection />
+          
+          {/* Social validations */}
+          <Certificates />
+          <Achievements />
+          <Testimonials />
+          <Blogs />
+          
+          <Contact />
+        </main>
 
-          <Footer />
-        </motion.div>
-      )}
+        <Footer />
+      </motion.div>
     </>
   );
 }

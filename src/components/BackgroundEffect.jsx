@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 const BackgroundEffect = () => {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0, active: false });
-  const [mouseGlow, setMouseGlow] = useState({ x: -200, y: -200 });
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -22,166 +21,205 @@ const BackgroundEffect = () => {
     if (!ctx) return;
 
     let animationFrameId;
-    let stars = [];
+    let particles = [];
     let time = 0;
+    let isTabActive = true;
 
-    // Responsive star counts
-    const starCount = isMobile ? 60 : 150;
+    // Detect user preferences for reduced motion
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      initializeStars();
+      initializeParticles();
     };
 
-    // Box-Muller transform to generate standard normal distribution numbers (Gaussian)
-    const gaussianRandom = () => {
-      let u = 0, v = 0;
-      while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
-      while (v === 0) v = Math.random();
-      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-    };
+    class SpaceParticle {
+      constructor(type) {
+        this.type = type; // 0 = twinkling white star, 1 = rising glowing ember
+        this.reset();
+        // Stagger y initial states
+        this.y = Math.random() * canvas.height;
+      }
 
-    const initializeStars = () => {
-      stars = [];
-      const width = canvas.width;
-      const height = canvas.height;
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = this.type === 1 ? canvas.height + 20 : Math.random() * canvas.height;
+        this.size = this.type === 1 ? Math.random() * 1.5 + 1.0 : Math.random() * 0.7 + 0.3;
+        this.speedY = this.type === 1 ? Math.random() * 0.4 + 0.2 : (Math.random() - 0.5) * 0.05;
+        this.speedX = this.type === 1 ? 0 : (Math.random() - 0.5) * 0.05;
+        this.alpha = Math.random() * 0.5 + 0.15;
+        this.baseAlpha = this.alpha;
+        this.twinkleSpeed = Math.random() * 0.02 + 0.005;
+        this.offset = Math.random() * 100;
+      }
 
-      // Define 3 galactic cluster hubs (Milky Way centers)
-      const clusters = [
-        { x: width * 0.25, y: height * 0.3, radius: Math.min(width, height) * 0.2 },
-        { x: width * 0.70, y: height * 0.65, radius: Math.min(width, height) * 0.25 },
-        { x: width * 0.50, y: height * 0.15, radius: Math.min(width, height) * 0.15 }
-      ];
+      update() {
+        if (prefersReducedMotion) return;
+
+        // Apply movement physics
+        if (this.type === 1) {
+          // Ember rising physics with sway wave
+          this.y -= this.speedY;
+          this.x += Math.sin(time * 0.015 + this.offset) * 0.2;
+        } else {
+          // Star slow drift
+          this.y += this.speedY;
+          this.x += this.speedX;
+        }
+
+        // Wrap around bounds
+        if (this.y < -10) {
+          this.reset();
+        } else if (this.y > canvas.height + 10) {
+          this.y = -5;
+        }
+
+        if (this.x < -10) {
+          this.x = canvas.width + 5;
+        } else if (this.x > canvas.width + 10) {
+          this.x = -5;
+        }
+
+        // Twinkling animation for stars
+        if (this.type === 0) {
+          this.alpha = this.baseAlpha + Math.sin(time * this.twinkleSpeed) * 0.12;
+          if (this.alpha < 0.05) this.alpha = 0.05;
+          if (this.alpha > 0.8) this.alpha = 0.8;
+        }
+      }
+
+      draw(parallaxX, parallaxY) {
+        ctx.beginPath();
+        // Apply mouse parallax translations
+        const drawX = this.x + parallaxX * (this.type === 1 ? 1.5 : 0.5);
+        const drawY = this.y + parallaxY * (this.type === 1 ? 1.5 : 0.5);
+
+        ctx.arc(drawX, drawY, this.size, 0, Math.PI * 2);
+
+        if (this.type === 1) {
+          // Glow ember colors
+          ctx.fillStyle = `rgba(255, 106, 61, ${this.alpha * 0.75})`;
+        } else {
+          // Soft white/silver star colors
+          ctx.fillStyle = `rgba(248, 250, 252, ${this.alpha})`;
+        }
+        ctx.fill();
+      }
+    }
+
+    const initializeParticles = () => {
+      particles = [];
+      const starCount = isMobile ? 30 : 80;
+      const emberCount = isMobile ? 15 : 35;
 
       for (let i = 0; i < starCount; i++) {
-        let x, y;
-        const isClustered = Math.random() < 0.7; // 70% clustered, 30% background scatter
-
-        if (isClustered && clusters.length > 0) {
-          const cluster = clusters[Math.floor(Math.random() * clusters.length)];
-          // Gaussian distribution around the hub coordinate
-          x = cluster.x + gaussianRandom() * cluster.radius;
-          y = cluster.y + gaussianRandom() * cluster.radius;
-        } else {
-          // Uniform background scatter
-          x = Math.random() * width;
-          y = Math.random() * height;
-        }
-
-        // Clip bounds to screen area
-        if (x < 0) x = 0;
-        if (x > width) x = width;
-        if (y < 0) y = 0;
-        if (y > height) y = height;
-
-        // Visual types: 0 (tiny), 1 (medium), 2 (large glowing)
-        let type = 0;
-        const rand = Math.random();
-        if (rand > 0.95) {
-          type = 2; // Glowing stars
-        } else if (rand > 0.8) {
-          type = 1; // Medium stars
-        }
-
-        const size = type === 2 ? Math.random() * 1.5 + 1.2 : type === 1 ? Math.random() * 0.8 + 0.6 : Math.random() * 0.4 + 0.2;
-        const baseAlpha = type === 2 ? Math.random() * 0.4 + 0.5 : type === 1 ? Math.random() * 0.3 + 0.3 : Math.random() * 0.25 + 0.15;
-        const twinkleSpeed = Math.random() * 0.015 + 0.005;
-        
-        stars.push({
-          x,
-          y,
-          size,
-          baseAlpha,
-          alpha: baseAlpha,
-          twinkleSpeed,
-          type,
-          // Extremely slow drift speeds
-          driftX: (Math.random() - 0.5) * 0.02,
-          driftY: (Math.random() - 0.5) * 0.02
-        });
+        particles.push(new SpaceParticle(0)); // Stars
+      }
+      for (let i = 0; i < emberCount; i++) {
+        particles.push(new SpaceParticle(1)); // Embers
       }
     };
 
     window.addEventListener("resize", resizeCanvas);
-    resizeCanvas(); // Triggers initialization
-
-    const drawConstellations = () => {
-      // Limit line drawings to a subset of stars to save rendering time (constant 60fps)
-      const subsetLimit = Math.min(stars.length, isMobile ? 0 : 40);
-      if (subsetLimit === 0) return;
-
-      for (let i = 0; i < subsetLimit; i++) {
-        const starA = stars[i];
-        for (let j = i + 1; j < subsetLimit; j++) {
-          const starB = stars[j];
-          const dx = starA.x - starB.x;
-          const dy = starA.y - starB.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          // Connect if within threshold (90px)
-          if (dist < 90) {
-            const lineAlpha = (1 - dist / 90) * 0.04 * starA.alpha * starB.alpha;
-            ctx.beginPath();
-            ctx.moveTo(starA.x, starA.y);
-            ctx.lineTo(starB.x, starB.y);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${lineAlpha})`;
-            ctx.lineWidth = 0.45;
-            ctx.stroke();
-          }
-        }
-      }
-    };
+    resizeCanvas();
 
     const animate = () => {
+      if (!isTabActive) return;
+
       time += 1;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render stars
-      stars.forEach((star) => {
-        // Apply tiny slow drift
-        star.x += star.driftX;
-        star.y += star.driftY;
+      // Track scroll details for the fading nebula
+      const scrollY = window.scrollY || window.pageYOffset;
+      const fadeFactor = Math.max(0, 1 - scrollY / (window.innerHeight * 0.85));
 
-        // Re-wrap bounds
-        if (star.x < 0) star.x = canvas.width;
-        if (star.x > canvas.width) star.x = 0;
-        if (star.y < 0) star.y = canvas.height;
-        if (star.y > canvas.height) star.y = 0;
+      // Calculate mouse parallax offset values
+      const parallaxX = mouseRef.current.active ? (mouseRef.current.x - canvas.width / 2) * 0.015 : 0;
+      const parallaxY = mouseRef.current.active ? (mouseRef.current.y - canvas.height / 2) * 0.015 : 0;
 
-        // Calculate twinkling alpha using trigonometric waves
-        star.alpha = star.baseAlpha + Math.sin(time * star.twinkleSpeed) * (star.type === 2 ? 0.25 : 0.15);
-        if (star.alpha < 0.05) star.alpha = 0.05;
-        if (star.alpha > 1) star.alpha = 1;
+      // Draw Volumetric Gas Nebula Clouds (if visible on scroll)
+      if (fadeFactor > 0) {
+        ctx.globalCompositeOperation = "screen";
 
-        ctx.beginPath();
-        if (star.type === 2) {
-          // Large glowing stars: render radial glow shadow
-          const gradient = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.size * 3);
-          gradient.addColorStop(0, `rgba(255, 255, 255, ${star.alpha})`);
-          gradient.addColorStop(0.3, `rgba(255, 255, 255, ${star.alpha * 0.4})`);
-          gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
-          ctx.arc(star.x, star.y, star.size * 3, 0, Math.PI * 2);
-          ctx.fillStyle = gradient;
-        } else {
-          ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
-        }
-        ctx.fill();
+        const width = canvas.width;
+        const height = canvas.height;
+        const baseRadius = Math.min(width, height);
+
+        // Volumetric Orbs Data (Crimson, Dark Red, Orange highlights)
+        const orbs = [
+          // Orb 1: Deep Crimson Left
+          {
+            x: width * 0.2 + Math.sin(time * 0.0008) * 80 + parallaxX * 2,
+            y: height * 0.3 + Math.cos(time * 0.0006) * 50 + parallaxY * 2,
+            radius: baseRadius * 0.45,
+            color: `rgba(50, 7, 7, ${0.45 * fadeFactor})`
+          },
+          // Orb 2: Dark Red Mid-Left
+          {
+            x: width * 0.35 + Math.cos(time * 0.0007) * 70 + parallaxX * 1.5,
+            y: height * 0.25 + Math.sin(time * 0.0009) * 60 + parallaxY * 1.5,
+            radius: baseRadius * 0.35,
+            color: `rgba(122, 10, 10, ${0.35 * fadeFactor})`
+          },
+          // Orb 3: Orange highlight (under portrait)
+          {
+            x: width * 0.18 + Math.sin(time * 0.001) * 40 + parallaxX * 2.5,
+            y: height * 0.4 + Math.cos(time * 0.0008) * 40 + parallaxY * 2.5,
+            radius: baseRadius * 0.25,
+            color: `rgba(255, 106, 61, ${0.08 * fadeFactor})`
+          },
+          // Orb 4: Soft Crimson Right boundary
+          {
+            x: width * 0.75 + Math.sin(time * 0.0005) * 50 + parallaxX,
+            y: height * 0.15 + Math.cos(time * 0.0007) * 40 + parallaxY,
+            radius: baseRadius * 0.3,
+            color: `rgba(50, 7, 7, ${0.2 * fadeFactor})`
+          }
+        ];
+
+        orbs.forEach((orb) => {
+          const grad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.radius);
+          grad.addColorStop(0, orb.color);
+          grad.addColorStop(0.5, orb.color.replace(/[\d.]+\)$/, (m) => parseFloat(m) * 0.4 + ")"));
+          grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+          ctx.beginPath();
+          ctx.arc(orb.x, orb.y, orb.radius, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+        });
+
+        // Restore normal draw mode
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      // Draw and update particles
+      particles.forEach((p) => {
+        p.update();
+        p.draw(parallaxX, parallaxY);
       });
-
-      // Draw constellation connections on top of stars
-      drawConstellations();
 
       animationFrameId = requestAnimationFrame(animate);
     };
+
+    // Tab active management
+    const handleVisibilityChange = () => {
+      isTabActive = !document.hidden;
+      if (isTabActive) {
+        animate();
+      } else {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     animate();
 
     const handleMouseMove = (e) => {
       mouseRef.current.x = e.clientX;
       mouseRef.current.y = e.clientY;
       mouseRef.current.active = true;
-      setMouseGlow({ x: e.clientX, y: e.clientY });
     };
 
     const handleMouseLeave = () => {
@@ -195,37 +233,21 @@ const BackgroundEffect = () => {
       window.removeEventListener("resize", resizeCanvas);
       window.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       cancelAnimationFrame(animationFrameId);
     };
   }, [isMobile]);
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden bg-[#030307] pointer-events-none">
-      {/* Film grain noise and vignette overlay layers */}
+    <div className="fixed inset-0 z-0 overflow-hidden bg-[#030303] pointer-events-none">
+      {/* Cinematic vignette and grain overlay */}
       <div className="vignette-overlay" />
       <div className="noise-overlay" />
 
-      {/* Grid line pattern */}
+      {/* Grid Pattern */}
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.25]" />
 
-      {/* VERY faint, reduced blue glow follow */}
-      {mouseRef.current.active && (
-        <div
-          className="absolute w-[500px] h-[500px] rounded-full pointer-events-none mix-blend-screen opacity-10 transition-all duration-700 ease-out"
-          style={{
-            background: "radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, rgba(0, 0, 0, 0) 70%)",
-            left: `${mouseGlow.x - 250}px`,
-            top: `${mouseGlow.y - 250}px`,
-          }}
-        />
-      )}
-
-      {/* Very soft ambient background glow orbs (reduced blue/cyan intensity by 80%) */}
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-[#3B82F6]/[0.03] aurora-orb" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[700px] h-[700px] rounded-full bg-[#8B5CF6]/[0.02] aurora-orb" />
-      <div className="absolute top-[35%] right-[25%] w-[400px] h-[400px] rounded-full bg-white/[0.01] aurora-orb" />
-
-      {/*Twinkling Cosmic Starfield Canvas */}
+      {/* Ambient background particles canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 block pointer-events-none" />
     </div>
   );

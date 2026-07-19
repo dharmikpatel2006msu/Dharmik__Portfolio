@@ -17,6 +17,12 @@ const NAV_ITEMS = [
   { id: "contact", label: "Contact" }
 ];
 
+const logoStars = [
+  { id: 1, top: "-6px", left: "10px", delay: 0.2 },
+  { id: 2, bottom: "-4px", right: "24px", delay: 0.9 },
+  { id: 3, top: "10px", right: "-6px", delay: 1.5 }
+];
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -49,21 +55,107 @@ const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-[#050816]/70 backdrop-blur-xl border-b border-white/5 py-3.5 shadow-lg"
+          ? "bg-[#030303]/75 backdrop-blur-xl border-b border-white/5 py-3.5 shadow-lg"
           : "bg-transparent py-5 sm:py-6"
       }`}
     >
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        {/* Logo */}
-        <button
+        {/* Logo Wordmark with atmospheric space glow and stars */}
+        <motion.button
           onClick={() => scrollToSection("home")}
-          className="text-white font-space font-bold text-lg sm:text-xl tracking-tight flex items-center gap-2 clickable"
+          initial={{ opacity: 0, y: 8, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          whileHover="hover"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          variants={{
+            hover: { scale: 1.02, transition: { duration: 0.3 } }
+          }}
+          className="relative font-space font-extrabold text-xl sm:text-2xl tracking-tight flex items-center justify-center py-2 px-3 select-none clickable outline-none focus:outline-none"
         >
-          <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-            {personalInfo.name.split(" ")[0]}
+          {/* 3 Twinkling absolute micro-stars around logo */}
+          {logoStars.map((star) => (
+            <motion.div
+              key={star.id}
+              animate={{ opacity: [0.1, 0.8, 0.1] }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                delay: star.delay,
+                ease: "easeInOut"
+              }}
+              className="absolute w-0.5 h-0.5 rounded-full bg-[#F8FAFC] pointer-events-none"
+              style={{
+                top: star.top || "auto",
+                bottom: star.bottom || "auto",
+                left: star.left || "auto",
+                right: star.right || "auto",
+                filter: "drop-shadow(0 0 1px #FFF)",
+                zIndex: 1
+              }}
+            />
+          ))}
+
+          {/* Atmospheric blur glow behind logo */}
+          <motion.div
+            variants={{
+              initial: { opacity: 0.08, scale: 1 },
+              hover: {
+                opacity: 0.12,
+                scale: 1.05,
+                transition: { duration: 0.3, ease: "easeOut" }
+              }
+            }}
+            initial="initial"
+            className="absolute inset-0 rounded-full blur-[35px] pointer-events-none"
+            style={{
+              background: "radial-gradient(circle, #60A5FA 0%, #38BDF8 100%)",
+              zIndex: -1
+            }}
+          />
+
+          {/* Glide particle spark */}
+          <motion.div
+            variants={{
+              initial: { x: "-20%", y: "45%", opacity: 0 },
+              hover: {
+                x: "120%",
+                y: ["45%", "25%", "45%"],
+                opacity: [0, 0.8, 0.8, 0],
+                transition: {
+                  duration: 0.8,
+                  ease: "easeInOut"
+                }
+              }
+            }}
+            initial="initial"
+            className="absolute w-1 h-1 rounded-full bg-[#7DD3FC] blur-[1px] pointer-events-none"
+            style={{ zIndex: -1 }}
+          />
+
+          {/* Wordmark Text */}
+          <span className="relative block overflow-hidden">
+            <span className="bg-gradient-to-r from-[#F8FAFC] via-[#E2E8F0] to-[#7DD3FC] bg-clip-text text-transparent select-none font-black font-space">
+              Dharmik
+            </span>
+
+            {/* Sweep overlay */}
+            <motion.div
+              variants={{
+                initial: { x: "-100%" },
+                hover: {
+                  x: "200%",
+                  transition: {
+                    duration: 0.5,
+                    ease: [0.16, 1, 0.3, 1]
+                  }
+                }
+              }}
+              initial="initial"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-[#F8FAFC]/20 to-transparent pointer-events-none"
+              style={{ skewX: -20 }}
+            />
           </span>
-          <span className="text-white/30 font-light">.dev</span>
-        </button>
+        </motion.button>
 
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5 backdrop-blur-md relative">
@@ -136,7 +228,7 @@ const Navbar = () => {
             animate={{ opacity: 1, height: "100vh" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 top-[60px] sm:top-[70px] z-40 bg-[#050816]/98 backdrop-blur-xl border-t border-white/5 lg:hidden px-6 py-8 flex flex-col justify-between overflow-y-auto"
+            className="fixed inset-0 top-[60px] sm:top-[70px] z-40 bg-[#030303]/98 backdrop-blur-xl border-t border-white/5 lg:hidden px-6 py-8 flex flex-col justify-between overflow-y-auto"
           >
             <div className="flex flex-col gap-4">
               {NAV_ITEMS.map((item, index) => (

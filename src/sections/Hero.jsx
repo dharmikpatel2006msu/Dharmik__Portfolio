@@ -98,7 +98,7 @@ const Hero = () => {
             {/* Soft Ambient Silver Halo Glow */}
             <div className="absolute w-[240px] h-[240px] rounded-full blur-[80px] opacity-15 mix-blend-screen pointer-events-none bg-gradient-to-tr from-white/20 via-white/5 to-transparent" />
 
-            {/* SLICE 1: Grayscale Left background slice */}
+            {/* SLICE 1: Left Background slice */}
             <motion.div
               style={{ x: slice1X, y: slice1Y, translateZ: -45 }}
               className="absolute left-[2%] top-[12%] w-[22%] h-[55%] rounded-xl border border-white/5 overflow-hidden shadow-lg opacity-40 z-1"
@@ -110,7 +110,7 @@ const Hero = () => {
               />
             </motion.div>
 
-            {/* SLICE 2: Grayscale Top-Middle background slice */}
+            {/* SLICE 2: Top-Middle Background slice */}
             <motion.div
               style={{ x: slice2X, y: slice2Y, translateZ: -25 }}
               className="absolute left-[28%] top-[2%] w-[24%] h-[40%] rounded-xl border border-white/5 overflow-hidden shadow-lg opacity-35 z-1"
@@ -122,7 +122,7 @@ const Hero = () => {
               />
             </motion.div>
 
-            {/* SLICE 3: Grayscale Bottom-Middle background slice */}
+            {/* SLICE 3: Bottom-Middle Background slice */}
             <motion.div
               style={{ x: slice3X, y: slice3Y, translateZ: -10 }}
               className="absolute left-[26%] top-[46%] w-[28%] h-[46%] rounded-xl border border-white/5 overflow-hidden shadow-lg opacity-45 z-2"
@@ -134,7 +134,7 @@ const Hero = () => {
               />
             </motion.div>
 
-            {/* SLICE 4: Grayscale Right background slice */}
+            {/* SLICE 4: Right Background slice */}
             <motion.div
               style={{ x: slice4X, y: slice4Y, translateZ: -30 }}
               className="absolute right-[2%] top-[15%] w-[20%] h-[58%] rounded-xl border border-white/5 overflow-hidden shadow-lg opacity-30 z-1"
@@ -190,14 +190,13 @@ const Hero = () => {
             <span>Computer Science Engineer</span>
           </motion.div>
 
-          {/* Header Name */}
+          {/* Header Name with Refined Metallic Gradient */}
           <motion.h1
             variants={itemVariants}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-space font-extrabold tracking-tight mb-4 leading-[1.1] text-white w-full"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-space font-extrabold tracking-tight mb-4 leading-[1.1] text-[#F8FAFC] w-full"
           >
             Hi, I'm{" "}
-            {/* Premium, low-saturation blue-cyan-purple gradient */}
-            <span className="bg-gradient-to-r from-blue-300 via-cyan-200 to-purple-300 bg-clip-text text-transparent">
+            <span className="text-gradient-metallic block sm:inline">
               {personalInfo.name}
             </span>
           </motion.h1>
@@ -229,7 +228,7 @@ const Hero = () => {
           {/* Description text */}
           <motion.p
             variants={itemVariants}
-            className="text-[#CBD5E1] text-xs sm:text-sm md:text-base leading-relaxed max-w-xl mb-8 font-inter"
+            className="text-[#CBD5E1] text-xs sm:text-sm md:text-base leading-relaxed tracking-wide max-w-xl mb-8 font-inter"
           >
             {personalInfo.description}
           </motion.p>
@@ -254,7 +253,7 @@ const Hero = () => {
             </button>
           </motion.div>
 
-          {/* Social icons */}
+          {/* Social connections */}
           <motion.div variants={itemVariants} className="flex items-center justify-center lg:justify-start gap-5 w-full lg:w-auto">
             <a
               href={personalInfo.socials.github}
